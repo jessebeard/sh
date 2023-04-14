@@ -170,12 +170,12 @@ actual_checksum=$(sha256sum "$file_to_check" | cut -d ' ' -f 1 | tr '[:upper:]' 
 # check if checksums match
 if [ "$actual_checksum" = "$expected_checksum" ]; then
   if [ "$silent_mode" = false ]; then
-    printf "\e[32mChecksums match!\e[0m\n"
+    printf "\e[32mChecksums match!\e[0m"
   fi
   exit 0
 else
   if [ "$silent_mode" = false ]; then
-    printf "\e[31mChecksums do not match!\e[0m\n"
+    printf "\e[31mChecksums do not match!\e[0m"
   fi
   exit 1
 fi
