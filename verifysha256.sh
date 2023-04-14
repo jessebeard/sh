@@ -34,8 +34,8 @@
 # usage function
 usage() {
   printf "Usage: $(basename $0) [-S|-s] <digest> [<target file>]\n"
-  printf "-S: Silence all output\n"
-  printf "-s: Silence output except for match or do not match\n"
+  printf -- '-S: Silence all output\n'
+  printf -- '-s: Silence output except for match or do not match\n'
   printf "no option flags can be considered verbose mode\n"
   printf "Hint: Only one argument is required if the digest is located in the same directory as the target file\n"
   exit 1
