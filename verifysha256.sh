@@ -30,6 +30,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+#TODO: add a warning of some sort that large files may take a long time.
+
+
 
 # usage function
 usage() {
@@ -39,6 +42,27 @@ usage() {
   printf "no option flags can be considered verbose mode\n"
   printf "Hint: Only one argument is required if the digest is located in the same directory as the target file\n"
   exit 1
+}
+
+# file size function
+check_file_size() {
+    # Check if file exists
+    if [ ! -e "$1" ]; then
+        echo "Error: File '$1' not found when checking size."
+        return 1
+    fi
+
+    # Get file size in bytes
+    size=$(stat -c %s "$1")
+
+    # Convert bytes to GB
+    size_gb=$(awk "BEGIN { printf \"%.2f\", $size / 1024 / 1024 / 1024 }")
+
+    # Print warning if file size is greater than 1 GB
+    if [ $size -gt 1073741824 ]; then
+        printf "\e[1;33mWarning:\033[0m File size is \033[33m%.2f GB\033[0m. This may take a while to process.\n" $size_gb
+        printf "\e[1;33mProcess is currently running, not stalled, please wait!\e[0m\n"
+    fi
 }
 
 # check if there are at least one argument
@@ -102,15 +126,20 @@ if [ -z "$expected_checksum" ]; then
   exit 1
 fi
 
+
+
 # get filename and directory from digest file
 directory=$(dirname "$1")
-filename=$(grep -o '[^ ]*\..*$' "$1")
+filename=$(grep -oP '^[[:alnum:]]{64}\s*\*?\K.*?(?=s*$)' "$1")
+# useful debugging tool
+# printf "debug \n 1. $1 \n 2. $directory \n 3. $filename\n"
 
 if [ -z "$filename" ]; then
   if [ "$verbose_mode" = true ]; then
-    printf "\e[1;33mWarning:\e[0m Non-standard digest file doesn't include filename, using it's name instead.\n"
+    printf "\e[1;33mWarning:\e[0m Non-standard digest file doesn't include filename, using its name instead.\n"
   fi
-  filename=$(basename $1 | sed 's/\.[^.]*$//')
+  filename=$(basename "$1"| sed 's/\.[^.]*$//')
+  #printf "here $filename $directory"
 fi
 
 # check if digest file matches second argument filename
@@ -128,13 +157,15 @@ if [ $# -eq 2 ] && [ ! -f "$2" ]; then
   fi
 fi
 
+# warn the user if the filesize is larger than 1GB
 # calculate actual checksum of file
 if [ $# -eq 2 ]; then
-  actual_checksum=$(sha256sum "$2" | cut -d ' ' -f 1 |  tr '[:upper:]' '[:lower:]')
+  file_to_check=$2
 else
-
-  actual_checksum=$(sha256sum "$directory/$filename" | cut -d ' ' -f 1 | tr '[:upper:]' '[:lower:]')
+  file_to_check="$directory/$filename"
 fi
+check_file_size "$file_to_check"
+actual_checksum=$(sha256sum "$file_to_check" | cut -d ' ' -f 1 | tr '[:upper:]' '[:lower:]')
 
 # check if checksums match
 if [ "$actual_checksum" = "$expected_checksum" ]; then
@@ -148,3 +179,5 @@ else
   fi
   exit 1
 fi
+
+
